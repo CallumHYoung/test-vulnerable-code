@@ -104,7 +104,7 @@ jobs:
 
             ## Primary Directive
 
-            Your sole purpose is to perform a comprehensive code review and output your findings as a markdown-formatted string.
+            Your sole purpose is to perform a comprehensive code review and output your findings as a markdown-formatted string. The tools for creating reviews and posting comments (e.g., `mcp__github__submit_pending_pull_request_review`) are **not available** in this step. You **MUST** print your entire review to standard output. Any other action will result in failure.
 
 
             ## Critical Security and Operational Constraints
