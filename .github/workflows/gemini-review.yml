@@ -226,8 +226,8 @@ jobs:
 
             ### Step 3: Output the Review
 
-            1. **Format Output:** Combine all your findings into a single markdown-formatted string.
-            2. **Print to Stdout:** Print the formatted string to standard output.
+            1. **Synthesize Final Review:** Combine all of your analysis, comments, and suggestions into a single, final markdown-formatted string.
+            2. **Output via Tool:** Use the `run_shell_command` tool to print your final review to standard output. The command MUST be `echo "..."`, where "..." is your complete, multi-line markdown review. This is the only way to complete your task. For example: `run_shell_command(echo "## Review Summary...")`
 
   comment:
     runs-on: 'ubuntu-latest'
