@@ -40,7 +40,7 @@ jobs:
         uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8' # ratchet:actions/checkout@v5
 
       - name: 'Run Gemini pull request review'
-        uses: 'CallumHYoung/run-gemini-cli@main' # ratchet:exclude
+        uses: 'google-github-actions/run-gemini-cli@main' # ratchet:exclude
         id: 'gemini_pr_review'
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
@@ -60,7 +60,7 @@ jobs:
           google_api_key: '${{ secrets.GOOGLE_API_KEY }}'
           use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
           gemini_debug: '${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
-          settings: |-
+          settings: |
             {
               "maxSessionTurns": 25,
               "telemetry": {
@@ -226,8 +226,8 @@ jobs:
 
             ### Step 3: Output the Review
 
-            1. **Synthesize Final Review:** Combine all of your analysis, comments, and suggestions into a single, final markdown-formatted string.
-            2. **Output via Tool:** Use the `run_shell_command` tool to print your final review to standard output. The command MUST be `echo "..."`, where "..." is your complete, multi-line markdown review. This is the only way to complete your task. For example: `run_shell_command(echo "## Review Summary...")`
+            1. **Format Output:** Combine all your findings into a single markdown-formatted string.
+            2. **Print to Stdout:** Print the formatted string to standard output.
 
   comment:
     runs-on: 'ubuntu-latest'
@@ -240,26 +240,23 @@ jobs:
         uses: 'actions/github-script@main'
         with:
           script: |
-            const { data: comments } = await github.rest.issues.listComments({
+            const bodies = [];
+            if ('${{ needs.review.result }}' === 'success') {
+              bodies.push('${{ needs.review.outputs.run_result }}');
+            }
+
+            const pr_failed = bodies.length === 0;
+            let final_body;
+            if (pr_failed) {
+              final_body = 'I have reported the error and cannot proceed without a valid pull request. I will wait for further instructions.';
+            } else {
+              final_body = bodies.join('\n\n---\n\n');
+            }
+
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
+              body: final_body,
             });
-            const botComment = comments.find(comment => comment.user.login === 'github-actions[bot]');
-            const body = `${{ needs.review.outputs.run_result }}`;
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: body,
-              });
-            }
           github-token: ${{ secrets.GITHUB_TOKEN }}
