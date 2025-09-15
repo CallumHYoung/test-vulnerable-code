@@ -241,8 +241,9 @@ jobs:
         with:
           script: |
             const bodies = [];
-            if ('${{ needs.review.result }}' === 'success') {
-              bodies.push('${{ needs.review.outputs.run_result }}');
+            const run_result = `${{ needs.review.outputs.run_result }}`;
+            if ('${{ needs.review.result }}' === 'success' && run_result.trim()) {
+              bodies.push(run_result);
             }
 
             const pr_failed = bodies.length === 0;
