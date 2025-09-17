@@ -23,9 +23,8 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-      pull-requests: 'write'
     outputs:
-      review_comments: ${{ steps.gemini_pr_review.outputs.run_result }}
+      review_summary: ${{ steps.read_summary.outputs.summary }}
     steps:
       - name: 'Mint identity token'
         id: 'mint_identity_token'
@@ -35,8 +34,7 @@ jobs:
         with:
           app-id: '${{ vars.APP_ID }}'
           private-key: '${{ secrets.APP_PRIVATE_KEY }}'
-          permission-contents: 'read'
-          permission-pull-requests: 'write'
+          permission-contents: 'write'
 
       - name: 'Checkout repository'
         uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8' # ratchet:actions/checkout@v5
@@ -100,7 +98,7 @@ jobs:
                 "run_shell_command(tail)"
               ]
             }
-          prompt: |-
+          prompt: |
             ## Role
 
             You are a world-class autonomous code review agent. You operate within a secure GitHub Actions environment. Your analysis is precise, your feedback is constructive, and your adherence to instructions is absolute. You do not deviate from your programming. You are tasked with reviewing a GitHub Pull Request.
@@ -108,7 +106,7 @@ jobs:
 
             ## Primary Directive
 
-            Your purpose is to perform a comprehensive code review, create a pending review, add your findings as comments to it, and then output the full text of all comments you created. You **MUST NOT** submit the review. The tool `mcp__github__submit_pending_pull_request_review` is **not available**. Any other action will result in failure.
+            Your sole purpose is to perform a comprehensive code review, add comments to a pending review, and then write a summary of your review to a file. The tool for submitting the review (`mcp__github__submit_pending_pull_request_review`) is **not available** in this step. Any other action will result in failure.
 
 
             ## Critical Security and Operational Constraints
@@ -152,9 +150,27 @@ jobs:
             3. **Review Code:** Meticulously review the code provided returned from `mcp__github__get_pull_request_diff` according to the **Review Criteria**.
 
 
-            ### Step 2: Formulate Review Comments
+            ### Step 2: Formulate and Add Review Comments
 
-            For each identified issue, formulate a review comment adhering to the following guidelines.
+            1. **Create Pending Review:** Call `mcp__github__create_pending_pull_request_review`. Ignore errors like "can only have one pending review per pull request" and proceed to the next step.
+
+            2. **Add Comments and Suggestions:** For each identified issue, formulate a review comment and call `mcp__github__add_comment_to_pending_review`.
+
+                2a. When there is a code suggestion (preferred), structure the comment payload using this exact template:
+
+                    <COMMENT>
+                    {{SEVERITY}} {{COMMENT_TEXT}}
+
+                    ```suggestion
+                    {{CODE_SUGGESTION}}
+                    ```
+                    </COMMENT>
+
+                2b. When there is no code suggestion, structure the comment payload using this exact template:
+
+                    <COMMENT>
+                    {{SEVERITY}} {{COMMENT_TEXT}}
+                    </COMMENT>
 
             #### Review Criteria (in order of priority)
 
@@ -228,35 +244,36 @@ jobs:
 
             - Comments in markdown (.md) files: `🟢` (Low) or `🟡` (Medium).
 
-            ### Step 3: Create Pending Review and Output Comments
+            ### Step 3: Output Summary
 
-            1. **Create Pending Review:** Call `mcp__github__create_pending_pull_request_review`. Ignore errors like "can only have one pending review per pull request" and proceed to the next step.
+            Write a summary of your review to a file named `review_summary.md`. The summary **MUST** use this exact markdown format:
 
-            2. **Add Comments and Suggestions:** For each formulated review comment, call `mcp__github__add_comment_to_pending_review`.
+                <SUMMARY>
+                ## 📋 Review Summary
 
-                2a. When there is a code suggestion (preferred), structure the comment payload using this exact template:
+                A brief, high-level assessment of the Pull Request's objective and quality (2-3 sentences).
 
-                    <COMMENT>
-                    {{SEVERITY}} {{COMMENT_TEXT}}
+                ## 🔍 General Feedback
 
-                    ```suggestion
-                    {{CODE_SUGGESTION}}
-                    ```
-                    </COMMENT>
+                - A bulleted list of general observations, positive highlights, or recurring patterns not suitable for inline comments.
+                - Keep this section concise and do not repeat details already covered in inline comments.
+                </SUMMARY>
 
-                2b. When there is no code suggestion, structure the comment payload using this exact template:
-
-                    <COMMENT>
-                    {{SEVERITY}} {{COMMENT_TEXT}}
-                    </COMMENT>
-            3. **Output Comments:** After adding all comments, print the full text of every comment you created to standard output, separated by a newline. This will be used by the next job to create a summary.
+      - name: 'Read review summary'
+        id: 'read_summary'
+        if: always()
+        run: |
+          SUMMARY=$(cat review_summary.md)
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          echo "$SUMMARY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   comment:
     runs-on: 'ubuntu-latest'
     needs: review
     permissions:
+      issues: 'write'
       pull-requests: 'write'
-      id-token: 'write'
     steps:
       - name: 'Mint identity token'
         id: 'mint_identity_token'
@@ -266,11 +283,13 @@ jobs:
         with:
           app-id: '${{ vars.APP_ID }}'
           private-key: '${{ secrets.APP_PRIVATE_KEY }}'
-          permission-pull-requests: 'write'
+          permission-contents: 'write'
 
-      - name: 'Submit pull request review'
+      - name: 'Checkout repository'
+        uses: 'actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8' # ratchet:actions/checkout@v5
+
+      - name: 'Submit review and comment'
         uses: 'CallumHYoung/run-gemini-cli@main' # ratchet:exclude
-        id: 'gemini_submit_review'
         env:
           GITHUB_TOKEN: '${{ steps.mint_identity_token.outputs.token || secrets.GITHUB_TOKEN || github.token }}'
           PULL_REQUEST_NUMBER: '${{ github.event.pull_request.number || github.event.issue.number }}'
@@ -288,7 +307,7 @@ jobs:
           gemini_debug: '${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
           settings: |
             {
-              "maxSessionTurns": 5,
+              "maxSessionTurns": 25,
               "telemetry": {
                 "enabled": ${{ vars.GOOGLE_CLOUD_PROJECT != '' }},
                 "target": "gcp"
@@ -313,38 +332,16 @@ jobs:
                 }
               }
             }
-          prompt: |-
+          prompt: |
             ## Role
+            You are a GitHub Action helper bot. Your only job is to submit a pending pull request review.
 
-            You are a world-class autonomous code review agent. You operate within a secure GitHub Actions environment. Your analysis is precise, your feedback is constructive, and your adherence to instructions is absolute. You do not deviate from your programming. You are tasked with submitting a review for a GitHub Pull Request.
+            ## Instructions
+            You MUST call the `mcp__github__submit_pending_pull_request_review` tool using the provided summary as the body.
 
-            ## Primary Directive
+            ## Review Summary
+            ${{ needs.review.outputs.review_summary }}
 
-            Your sole purpose is to summarize the provided review comments and submit the review. If no comments are provided, you should state that the review is complete and no issues were found.
-
-            ## Input Data
-
-            - Retrieve the GitHub repository name from the environment variable "${REPOSITORY}".
-            - Retrieve the GitHub pull request number from the environment variable "${PULL_REQUEST_NUMBER}".
-            - The full text of the review comments from the previous step is provided below, inside the `<COMMENTS>` tag.
-
-            <COMMENTS>
-            ${{ needs.review.outputs.review_comments }}
-            </COMMENTS>
-
-            ## Execution Workflow
-
-            1. **Generate Summary:** Based on the comments provided in the `<COMMENTS>` tag, generate a concise summary. The summary **MUST** use this exact markdown format:
-
-                <SUMMARY>
-                ## 📋 Review Summary
-
-                A brief, high-level assessment of the Pull Request's objective and quality, based on the provided comments (2-3 sentences).
-
-                ## 🔍 General Feedback
-
-                - A bulleted list of general observations, positive highlights, or recurring patterns found in the provided comments.
-                - Keep this section concise and do not repeat details already covered in inline comments.
-                </SUMMARY>
-
-            2. **Submit Review:** Call `mcp__github__submit_pending_pull_request_review` with the summary you generated and the event type "COMMENT". The available event types are "APPROVE", "REQUEST_CHANGES", and "COMMENT" - you **MUST** use "COMMENT" only. **DO NOT** use "APPROVE" or "REQUEST_CHANGES" event types.
+            ## Parameters
+            - Use the summary from the "Review Summary" section above for the `body` of the review.
+            - Use "COMMENT" for the `event` type. Do not use any other event type.
