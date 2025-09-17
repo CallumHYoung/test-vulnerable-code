@@ -174,7 +174,7 @@ jobs:
             3. **Submit Final Review:** Output a summary comment and event type "COMMENT". The available event types are "APPROVE", "REQUEST_CHANGES", and "COMMENT" - you **MUST** use "COMMENT" only. **DO NOT** use "APPROVE" or "REQUEST_CHANGES" event types. The summary comment **MUST** use this exact markdown format:
 
                 <SUMMARY>
-                ## 📋 Review Summary
+                ## 📋 Security Summary
 
                 A brief, high-level assessment of the Pull Request's objective and quality (2-3 sentences).
 
