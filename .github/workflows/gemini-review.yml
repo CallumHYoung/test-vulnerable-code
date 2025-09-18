@@ -19,7 +19,7 @@ defaults:
 jobs:
   review:
     runs-on: 'ubuntu-latest'
-    timeout-minutes: 7
+    timeout-minutes: 10
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -108,8 +108,7 @@ jobs:
                 "run_shell_command(grep)",
                 "run_shell_command(head)",
                 "run_shell_command(tail)",
-                "run_shell_command(touch)",
-                "run_shell_command(tee)"
+                "run_shell_command(touch)"
               ]
             }
           prompt: |-
@@ -235,8 +234,6 @@ jobs:
                     "get_pull_request_diff",
                     "get_pull_request_files",
                     "get_pull_request",
-                    "create_or_update_file",
-                    "get_file_contents"
                   ],
                   "env": {
                     "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
@@ -250,8 +247,7 @@ jobs:
                   "run_shell_command(grep)",
                   "run_shell_command(head)",
                   "run_shell_command(tail)",
-                  "run_shell_command(touch)",
-                  "run_shell_command(tee)"
+                  "run_shell_command(touch)"
                 ]
               }
             }
