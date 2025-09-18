@@ -93,7 +93,9 @@ jobs:
                     "create_pending_pull_request_review",
                     "get_pull_request_diff",
                     "get_pull_request_files",
-                    "get_pull_request"
+                    "get_pull_request",
+                    "create_or_update_file",
+                    "get_file_contents"
                   ],
                   "env": {
                     "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
@@ -170,7 +172,7 @@ jobs:
                     {{SEVERITY}} {{COMMENT_TEXT}}
                     </COMMENT>
 
-            3. **Submit Final Review:** Output a summary comment The summary comment **MUST** use this exact markdown format:
+            3. **Submit Final Review:** Create or update the summaries.md file and add a summary from the security review to this file. You should keep the existing contents of the file and only add your summary on top of the existing contents. You can use the mcp calls 'create_or_update_file', after checking for the file and reading its contents with 'get_file_contents'. The summary comment **MUST** use this exact markdown format:
 
                 ## 📋 Security Summary
 
@@ -230,7 +232,9 @@ jobs:
                     "create_pending_pull_request_review",
                     "get_pull_request_diff",
                     "get_pull_request_files",
-                    "get_pull_request"
+                    "get_pull_request",
+                    "create_or_update_file",
+                    "get_file_contents"
                   ],
                   "env": {
                     "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
@@ -397,10 +401,8 @@ jobs:
                     {{SEVERITY}} {{COMMENT_TEXT}}
                     </COMMENT>
 
-            3. **Submit Final Review:** Output a summary comment and event type "COMMENT". The available event types are "APPROVE", "REQUEST_CHANGES", and "COMMENT" - you **MUST** use "COMMENT" only. **DO NOT** use "APPROVE" or "REQUEST_CHANGES" event types. The summary comment **MUST** use this exact markdown format:
-
-                <SUMMARY>
-                ${{ steps.gemini_security_analysis.outputs.summary }}
+            3. **Create or update the summaries.md file and add a summary from the review to this file.** Keep the existing contents of the file, only adding your summary to the existing contents of the file. You can use the mcp calls 'create_or_update_file', after checking for the file and reading its contents with 'get_file_contents'. The summary comment **MUST** use this exact markdown format:
+                
                 ## 📋 Review Summary
 
                 A brief, high-level assessment of the Pull Request's objective and quality (2-3 sentences).
@@ -409,6 +411,11 @@ jobs:
 
                 - A bulleted list of general observations, positive highlights, or recurring patterns not suitable for inline comments.
                 - Keep this section concise and do not repeat details already covered in inline comments.
+
+            4. **Submit Final Review:** Read the summaries.md file and add the contents in the style suggested below. Add event type "COMMENT". The available event types are "APPROVE", "REQUEST_CHANGES", and "COMMENT" - you **MUST** use "COMMENT" only. **DO NOT** use "APPROVE" or "REQUEST_CHANGES" event types. The summary comment **MUST** use this exact markdown format. Do not add anything that wasn't found in the file.:
+
+                <SUMMARY>
+                  Place the contents of the file with all of the review summaries within these summary blocks.
                 </SUMMARY>
             -----
 
@@ -472,7 +479,8 @@ jobs:
                     "ghcr.io/github/github-mcp-server"
                   ],
                   "includeTools": [
-                    "submit_pending_pull_request_review"
+                    "submit_pending_pull_request_review",
+                    "get_file_contents"
                   ],
                   "env": {
                     "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
@@ -482,16 +490,15 @@ jobs:
             }
           prompt: |
             ## Role
-            You are a GitHub Action helper bot. Your only job is to submit a pending pull request review.
+            You are a GitHub Action helper bot. Your only job is to read a summaries.md file and then submit a pending pull request review.
 
             ## Instructions
-            You MUST call the `mcp__github__submit_pending_pull_request_review` tool using the provided summary as the body.
+            You MUST call the `mcp__github__submit_pending_pull_request_review` tool using the contents of summaries.md as the body of the call.
 
-            ## Review Summary
-            ${{ needs.review.outputs.review_summary }}
+            To read the file you can use the mcp call `get_file_contents` to read a `summaries.md` file, use the exact contents of this file as the body.
 
             ## Parameters
-            - Use the summary from the "Review Summary" section above for the `body` of the review.
+            - Use the summary from reading the summaries.md file for the `body` of the review.
             - Use "COMMENT" for the `event` type. Do not use any other event type.
 
             -----
