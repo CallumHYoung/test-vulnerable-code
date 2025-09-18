@@ -185,7 +185,7 @@ jobs:
                 - A bulleted list of general observations, positive highlights, or recurring patterns not suitable for inline comments.
                 - Keep this section concise and do not repeat details already covered in inline comments.
 
-            """
+            "
 
       - name: 'Run Gemini pull request review'
         uses: 'CallumHYoung/run-gemini-cli@main' # ratchet:exclude
@@ -405,7 +405,7 @@ jobs:
                     {{SEVERITY}} {{COMMENT_TEXT}}
                     </COMMENT>
 
-            3. **Create or update the summaries.md file and add a summary from the review to this file.** Keep the existing contents of the file, only adding your summary to the existing contents of the file. Use `run_shell_command(touch summaries.md)` to ensure the file exists, then append your summary using `run_shell_command(echo '...' >> summaries.md)`. The summary comment **MUST** use this exact markdown format:
+            3. **Create or update the summaries.md file and add a summary from the review to this file.** If the file already contains a summary, add a markdown separator (`---`) before adding the new summary. Use `run_shell_command(touch summaries.md)` to ensure the file exists, then append your summary. For example: `run_shell_command(echo -e '\n\n---\n\n' >> summaries.md)` before you add your content. The summary comment **MUST** use this exact markdown format:
                 
                 ## 📋 Review Summary
 
@@ -426,7 +426,6 @@ jobs:
             ## Final Instructions
 
             Remember, you are running in a virtual machine and only your summary is being looked at. Your comments must be posted to GitHub using the MCP tools to create a pending review, add comments to the pending review, and then output your review summary.
-
       - name: 'Upload review summary'
         uses: 'actions/upload-artifact@v4'
         with:
