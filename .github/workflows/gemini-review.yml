@@ -290,9 +290,9 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
 
   submit:
-    if: "startsWith(inputs.additional_context, 'SUBMIT_REVIEW_SUMMARY:')"
     runs-on: 'ubuntu-latest'
     timeout-minutes: 2
+    needs: review
     permissions:
       contents: 'read'
       id-token: 'write'
