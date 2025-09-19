@@ -94,8 +94,6 @@ jobs:
                     "get_pull_request_diff",
                     "get_pull_request_files",
                     "get_pull_request",
-                    "create_or_update_file",
-                    "get_file_contents"
                   ],
                   "env": {
                     "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
@@ -108,7 +106,6 @@ jobs:
                 "run_shell_command(grep)",
                 "run_shell_command(head)",
                 "run_shell_command(tail)",
-                "run_shell_command(touch)"
               ]
             }
           prompt: |-
@@ -173,7 +170,7 @@ jobs:
                     {{SEVERITY}} {{COMMENT_TEXT}}
                     </COMMENT>
 
-            3. **Submit Final Review:** Create or update the summaries.md file and add a summary from the security review to this file. You should keep the existing contents of the file and only add your summary on top of the existing contents. Use `run_shell_command(touch summaries.md)` to ensure the file exists, then append your summary using `run_shell_command(echo '...' >> summaries.md)`. The summary comment **MUST** use this exact markdown format:
+            3. **Submit Final Review:** Update the summaries.md by running run_shell_command(echo '...' >> summaries.md) file and add a summary from the security review to this file. You should keep the existing contents of the file and only add your summary on top of the existing contents. Use `run_shell_command(echo '...' >> summaries.md)` to ensure the file exists, then append your summary using `run_shell_command(echo '...' >> summaries.md)`. The summary comment **MUST** use this exact markdown format:
 
                 ## 📋 Security Summary
 
@@ -247,7 +244,6 @@ jobs:
                   "run_shell_command(grep)",
                   "run_shell_command(head)",
                   "run_shell_command(tail)",
-                  "run_shell_command(touch)"
                 ]
               }
             }
@@ -401,7 +397,7 @@ jobs:
                     {{SEVERITY}} {{COMMENT_TEXT}}
                     </COMMENT>
 
-            3. **Create or update the summaries.md file and add a summary from the review to this file.** If the file already contains a summary, add a markdown separator (`---`) before adding the new summary. Use `run_shell_command(touch summaries.md)` to ensure the file exists, then append your summary. For example: `run_shell_command(echo -e '\n\n---\n\n' >> summaries.md)` before you add your content. The summary comment **MUST** use this exact markdown format:
+            3. **Create or update the summaries.md file and add a summary from the review to this file.** If the file already contains a summary, add a markdown separator (`---`) before adding the new summary. Use `run_shell_command(echo '...' >> summaries.md)` to create and/or append your summary. For example: `run_shell_command(echo -e '\n\n---\n\n' >> summaries.md)` before you add your content. The summary comment **MUST** use this exact markdown format:
                 
                 ## 📋 Review Summary
 
