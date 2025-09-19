@@ -170,16 +170,21 @@ jobs:
                     {{SEVERITY}} {{COMMENT_TEXT}}
                     </COMMENT>
 
-            3. **Submit Final Review:** Update the summaries.md by running run_shell_command(echo '...' >> summaries.md) file and add a summary from the security review to this file. You should keep the existing contents of the file and only add your summary on top of the existing contents. Use `run_shell_command(echo '...' >> summaries.md)` to ensure the file exists, then append your summary using `run_shell_command(echo '...' >> summaries.md)`. The summary comment **MUST** use this exact markdown format:
+            3. **Submit Final Review:** Update the summaries.md by running the following command. This command will add a summary from the security review to this file, keeping the existing contents of the file and only adding your summary on top of the existing contents.
 
-                ## 📋 Security Summary
+            ```
+            run_shell_command(cat <<'EOF' >> summaries.md
+            ## 📋 Security Summary
 
-                A brief, high-level assessment of the Pull Request's objective and quality (2-3 sentences).
+            A brief, high-level assessment of the Pull Request's objective and quality (2-3 sentences).
 
-                ## 🔍 General Feedback
+            ## 🔍 General Feedback
 
-                - A bulleted list of general observations, positive highlights, or recurring patterns not suitable for inline comments.
-                - Keep this section concise and do not repeat details already covered in inline comments.
+            - A bulleted list of general observations, positive highlights, or recurring patterns not suitable for inline comments.
+            - Keep this section concise and do not repeat details already covered in inline comments.
+            EOF
+            )
+            ```
 
             "
 
@@ -397,16 +402,21 @@ jobs:
                     {{SEVERITY}} {{COMMENT_TEXT}}
                     </COMMENT>
 
-            3. **Create or update the summaries.md file and add a summary from the review to this file.** If the file already contains a summary, add a markdown separator (`---`) before adding the new summary. Use `run_shell_command(echo '...' >> summaries.md)` to create and/or append your summary. For example: `run_shell_command(echo -e '\n\n---\n\n' >> summaries.md)` before you add your content. The summary comment **MUST** use this exact markdown format:
-                
-                ## 📋 Review Summary
+            3. **Create or update the summaries.md file and add a summary from the review to this file.** If the file already contains a summary, add a markdown separator (`---`) before adding the new summary. To do this, run the following command `run_shell_command(echo -e '\n\n---\n\n' >> summaries.md)`. Then, to add your summary, run the following command:
 
-                A brief, high-level assessment of the Pull Request's objective and quality (2-3 sentences).
+            ```
+            run_shell_command(cat <<'EOF' >> summaries.md
+            ## 📋 Review Summary
 
-                ## 🔍 General Feedback
+            A brief, high-level assessment of the Pull Request's objective and quality (2-3 sentences).
 
-                - A bulleted list of general observations, positive highlights, or recurring patterns not suitable for inline comments.
-                - Keep this section concise and do not repeat details already covered in inline comments.
+            ## 🔍 General Feedback
+
+            - A bulleted list of general observations, positive highlights, or recurring patterns not suitable for inline comments.
+            - Keep this section concise and do not repeat details already covered in inline comments.
+            EOF
+            )
+            ```
 
             4. **Submit Final Review:** Read the summaries.md file and add the contents in the style suggested below. Add event type "COMMENT". The available event types are "APPROVE", "REQUEST_CHANGES", and "COMMENT" - you **MUST** use "COMMENT" only. **DO NOT** use "APPROVE" or "REQUEST_CHANGES" event types. The summary comment **MUST** use this exact markdown format. Do not add anything that wasn't found in the file.:
 
